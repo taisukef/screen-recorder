@@ -1,0 +1,70 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<h1>mp4 recorder</h1>
+<div>
+<video id="videoin" width="320px" height="180px"></video>
+<video id="videoout" width="320px" height="180px" controls></video>
+</div>
+1. <button id="btnrecord" disabled>Start Recording</button><br>
+2. <button id="btndownload" disabled>Download Movie</button><br>
+<p id="message"></p>
+
+<script type="module">
+import { css } from "https://js.sabae.cc/stdom.js";
+import { FFmpeg } from "https://taisukef.github.io/ffmpeg.es.js/ffmpeg.es.js";
+
+css();
+
+onload = async () => {
+  const startRecording = () => {
+    const rec = new MediaRecorder(videoin.srcObject);
+    const chunks = [];
+
+    btnrecord.textContent = 'Stop Recording';
+    btnrecord.onclick = () => {
+      rec.stop();
+      btnrecord.textContent = 'Start Recording';
+      btnrecord.onclick = startRecording;
+    };
+
+    rec.ondataavailable = e => chunks.push(e.data);
+    rec.onstop = async () => {
+      transcode(new Uint8Array(await (new Blob(chunks)).arrayBuffer()));
+    };
+    rec.start();
+  };
+
+  //videoin.srcObject = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+  videoin.srcObject = await navigator.mediaDevices.getDisplayMedia({ video: { cursor: "always" }, audio: true });
+  await videoin.play();
+
+  btnrecord.disabled = false;
+  btnrecord.onclick = startRecording;
+
+  const transcode = async (videodata) => {
+    const { createFFmpeg, fetchFile } = FFmpeg;
+    const ffmpeg = createFFmpeg({
+      log: true,
+    });
+
+    const name = 'record.webm';
+    message.innerHTML = 'Loading ffmpeg-core.js';
+    await ffmpeg.load();
+    message.innerHTML = 'Start transcoding';
+    ffmpeg.FS('writeFile', name, await fetchFile(videodata));
+    await ffmpeg.run('-i', name,  'output.mp4');
+    message.innerHTML = 'Complete transcoding';
+    const data = ffmpeg.FS('readFile', 'output.mp4');
+
+    const movieurl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+    videoout.src = movieurl;
+
+    btndownload.onclick = () => {
+      const anchor = document.createElement("a");
+      anchor.download = "movie.mp4";
+      anchor.href = movieurl;
+      anchor.click();
+    };
+    btndownload.disabled = false;
+  };
+};
+</script>
