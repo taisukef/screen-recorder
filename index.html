@@ -1,8 +1,20 @@
 <!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
 <h1>mp4 recorder</h1>
+<style>
+label {
+  display: inline-block;
+}
+</style>
 <div>
 <video id="videoin" width="320px" height="180px"></video>
-<video id="videoout" width="320px" height="180px" controls></video>
+<video id="videoout" width="320px" height="180px" controls></video><br>
+<select id=selResize>
+  <option>640x360</option>
+  <option>1280x720</option>
+  <option>1920x1080</option>
+  <option>(no resize)</option>
+</select>
+<label><input type="checkbox" id="chkmouse">with cursor</label>
 </div>
 1. <button id="btnrecord" disabled>Start Recording</button><br>
 2. <button id="btndownload" disabled>Download Movie</button><br>
@@ -34,7 +46,8 @@ onload = async () => {
   };
 
   //videoin.srcObject = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-  videoin.srcObject = await navigator.mediaDevices.getDisplayMedia({ video: { cursor: "always" }, audio: true });
+  const cursor = chkmouse.checked ? "always" : "never";
+  videoin.srcObject = await navigator.mediaDevices.getDisplayMedia({ video: { cursor }, audio: true });
   await videoin.play();
 
   btnrecord.disabled = false;
@@ -51,7 +64,14 @@ onload = async () => {
     await ffmpeg.load();
     message.innerHTML = 'Start transcoding';
     ffmpeg.FS('writeFile', name, await fetchFile(videodata));
-    await ffmpeg.run('-i', name,  'output.mp4');
+    const width = 610;
+    // await ffmpeg.run('-i', name, '-vf', `scale=${width}:-1`, 'output.mp4'); // NG
+    const resize = selResize.value;
+    if (resize == "(no resize") {
+      await ffmpeg.run('-i', name, 'output.mp4');
+    } else {
+      await ffmpeg.run('-i', name, '-s', resize, 'output.mp4');
+    }
     message.innerHTML = 'Complete transcoding';
     const data = ffmpeg.FS('readFile', 'output.mp4');
 
