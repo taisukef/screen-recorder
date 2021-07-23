@@ -16,8 +16,9 @@ label {
 </select>
 <label><input type="checkbox" id="chkmouse">with cursor</label>
 </div>
-1. <button id="btnrecord" disabled>Start Recording</button><br>
-2. <button id="btndownload" disabled>Download Movie</button><br>
+1. <button id="btnprepare">Prepare Recording</button><br>
+2. <button id="btnrecord" disabled>Start Recording</button><br>
+3. <button id="btndownload" disabled>Download Movie</button><br>
 <p id="message"></p>
 
 <script type="module">
@@ -26,7 +27,7 @@ import { FFmpeg } from "https://taisukef.github.io/ffmpeg.es.js/ffmpeg.es.js";
 
 css();
 
-onload = async () => {
+btnprepare.onclick = async () => {
   const startRecording = () => {
     const rec = new MediaRecorder(videoin.srcObject);
     const chunks = [];
@@ -46,7 +47,8 @@ onload = async () => {
   };
 
   //videoin.srcObject = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-  const cursor = chkmouse.checked ? "always" : "never";
+  const cursor = chkmouse.checked ? "always" : "never"; // motion
+  console.log(cursor);
   videoin.srcObject = await navigator.mediaDevices.getDisplayMedia({ video: { cursor }, audio: true });
   await videoin.play();
 
@@ -67,7 +69,7 @@ onload = async () => {
     const width = 610;
     // await ffmpeg.run('-i', name, '-vf', `scale=${width}:-1`, 'output.mp4'); // NG
     const resize = selResize.value;
-    if (resize == "(no resize") {
+    if (resize == "(no resize)") {
       await ffmpeg.run('-i', name, 'output.mp4');
     } else {
       await ffmpeg.run('-i', name, '-s', resize, 'output.mp4');
